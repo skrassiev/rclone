@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httputil"
+	"strings"
 	"sync"
 	"time"
 
@@ -184,8 +185,18 @@ func checkServerTime(req *http.Request, resp *http.Response) {
 	}
 	date, err := http.ParseTime(dateString)
 	if err != nil {
-		fs.Debugf(nil, "Couldn't parse Date: from server %s: %q: %v", host, dateString, err)
-		return
+		if strings.HasSuffix(dateString, " DST") {
+			const ipcamTimeFormat = "Mon, 02 Jan 2006 15:04:05 MST"
+			if date, err = time.Parse(ipcamTimeFormat, dateString); err == nil {
+				_, offs := time.Now().Local().Zone()
+				date = date.Add(time.Duration(-1*offs) * time.Second).Local()
+			}
+		}
+		if err != nil {
+
+			fs.Debugf(nil, "Couldn't parse Date: from server %s: %q: %v", host, dateString, err)
+			return
+		}
 	}
 	dt := time.Since(date)
 	const window = 5 * 60 * time.Second
