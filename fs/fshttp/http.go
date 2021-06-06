@@ -193,7 +193,6 @@ func checkServerTime(req *http.Request, resp *http.Response) {
 			}
 		}
 		if err != nil {
-
 			fs.Debugf(nil, "Couldn't parse Date: from server %s: %q: %v", host, dateString, err)
 			return
 		}

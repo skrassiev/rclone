@@ -560,7 +560,18 @@ func (o *Object) stat(ctx context.Context) error {
 	}
 	t, err := http.ParseTime(res.Header.Get("Last-Modified"))
 	if err != nil {
-		t = timeUnset
+		dateString := res.Header.Get("Last-Modified")
+		if strings.HasSuffix(dateString, " DST") {
+			const ipcamTimeFormat = "Mon, 02 Jan 2006 15:04:05 MST"
+			if t, err = time.Parse(ipcamTimeFormat, dateString); err == nil {
+				_, offs := time.Now().Local().Zone()
+				t = t.Add(time.Duration(-1*offs) * time.Second).Local()
+			}
+		}
+
+		if err != nil {
+			t = timeUnset
+		}
 	}
 	o.size = parseInt64(res.Header.Get("Content-Length"), -1)
 	o.modTime = t
